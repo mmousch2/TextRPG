@@ -22,6 +22,7 @@ gameSetup.set_rooms():
     ***Need to add the rooms + items
     Maybe add "up" and "down"?  (And ascend/descend/climb for actions?)
     Add death if you enter certain rooms with a light or weapon or something
+    Add something like "inspect fireplace" --> you get an item
 
 Other:
     Add health and money?
@@ -32,6 +33,7 @@ Other:
     ***Write conversation trees
         NEED ALL NPC TREES TO HAVE A DEFAULT FIRST "reply" FROM THE PLAYER
         (maps "what PC says" to "what NPC can says")
+    Make "The Pit" catch Ctrl-C and go "BWAHAHAHAHA"
 
 
 

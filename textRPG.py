@@ -11,6 +11,7 @@ global currentRoom  # integer index
 global inventory  # list (maybe limit the size later?)
 global game_over
 global npcs  # {"name" : NPC}
+global player_conversations
 
 
 def show_help():
@@ -82,6 +83,9 @@ def run_action(action, player):
         elif action[0] == "show" and action[1] == "help":
             show_help()
 
+        elif action[0] == "look" and action[1] == "around":
+            print(rooms[currentRoom].description)
+
         elif ((action[0] == "quit" or action[0] == "end") and action[1] == "game") or \
                 (action[0] == "game" and action[1] == "over"):
             print("Ending game!")
@@ -99,8 +103,10 @@ def game_loop():
     game_over = False
     global npcs
     npcs = gameSetup.set_npcs()
+    global player_conversations
+    player_conversations = gameSetup.make_conv_trees()
     global currentRoom
-    currentRoom = 0
+    currentRoom = 22  # Start in the living room
     global rooms
     rooms = gameSetup.set_rooms(npcs)
     global commands

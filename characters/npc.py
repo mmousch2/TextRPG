@@ -3,8 +3,9 @@ import gameSetup
 
 
 class NPC(character.Character):
-    def __init__(self):
+    def __init__(self, name):
         character.Character.__init__(self)
+        self.name = name
         self.convTree = gameSetup.get_conv_tree(self.name)
         self.convIndex = "Hello."  # Required first thing said by player!
 
