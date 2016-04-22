@@ -65,7 +65,7 @@ def run_action(action, player):
     global inventory
     global npcs
 
-    if len(action) < 2 and commands.get(action[0]) is not None:
+    if len(action) == 2 and commands.get(action[0]) is not None:
         # Decide what to do based on action[0]
         if action[0] in ["go", "move", "walk", "head"]:
             currentRoom = player.move(action, rooms[currentRoom], currentRoom)
