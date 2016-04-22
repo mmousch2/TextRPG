@@ -1,7 +1,7 @@
 class Room:
     def __init__(self):
         self.characters = []
-        self.items = [] # May hold duplicates!
+        self.items = []  # May hold duplicates!
         self.description = "An empty room."
         self.name = "Empty Room"
         self.directions = {}  # maps direction to room index, ex. "north" : 1

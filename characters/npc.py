@@ -3,10 +3,10 @@ import gameSetup
 
 
 class NPC(character.Character):
-    def __init__(self, name):
+    def __init__(self, name, player_conversations):
         character.Character.__init__(self)
         self.name = name
-        self.convTree = gameSetup.get_conv_tree(self.name)
+        self.convTree = gameSetup.get_conv_tree(self.name, player_conversations)
         self.convIndex = "Hello."  # Required first thing said by player!
 
     # Once the player says "Goodbye.", how to set it back to "Hello."?
@@ -34,6 +34,10 @@ class NPC(character.Character):
                 if replyNum == len(conv_node):  # "<Stop Talking>"
                     break
 
+                if conv_node[replyNum] == "Goodbye.":  # If player says "Goodbye."
+                    self.convIndex = "Hello."  # Reset the conversation
+                    break
+
                 # Invalid reply
                 if replyNum < 1 or replyNum > len(conv_node)-1:  # not in conv_node[1:]
                     print("That response is not valid.")
@@ -54,4 +58,7 @@ class NPC(character.Character):
                 break
 
         # End the conversation
-        print(self.name + ": Goodbye.")
+        if self.name != "Vivi":
+            print(self.name + ": Goodbye.")
+        else:
+            print(self.name + ": ...bye...")

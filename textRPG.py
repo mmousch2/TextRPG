@@ -4,6 +4,7 @@
 
 
 import gameSetup
+from characters import player
 
 global commands  # dict mapping command to possible options, like "go" : "[east/west/north/south]")
 global rooms  # dict of Rooms, {integer (index) : Room}
@@ -12,6 +13,7 @@ global inventory  # list (maybe limit the size later?)
 global game_over
 global npcs  # {"name" : NPC}
 global player_conversations
+global player1
 
 
 def show_help():
@@ -63,13 +65,21 @@ def run_action(action, player):
     global inventory
     global npcs
 
-    if len(action) != 2 and commands.get(action[0]) is not None:
+    if len(action) < 2 and commands.get(action[0]) is not None:
         # Decide what to do based on action[0]
         if action[0] in ["go", "move", "walk", "head"]:
             currentRoom = player.move(action, rooms[currentRoom], currentRoom)
 
         elif action[0] in ["get", "grab", "take"]:
-            player.get_item(action, rooms[currentRoom], inventory)
+            #player.get_item(action, rooms[currentRoom], inventory)
+            if action[1] in rooms[currentRoom].items:
+                inventory.append(action[1])
+                assert action[1] in inventory, "ERROR: Failed to pick up item in room!"
+                rooms[currentRoom].items.remove(action[1])
+                assert action[1] not in rooms[currentRoom].items, "ERROR: Failed to remove picked up item from room!"
+                print("Picked up a " + action[1] + "!")
+            else:
+                print("Cannot pick up that item!")
 
         elif action[0] in ["talk", "speak", "greet"] and action[1] in rooms[currentRoom].characters:
             # Launch conversation tree!
@@ -101,10 +111,10 @@ def game_loop():
     # Set defaults
     global game_over
     game_over = False
-    global npcs
-    npcs = gameSetup.set_npcs()
     global player_conversations
     player_conversations = gameSetup.make_conv_trees()
+    global npcs
+    npcs = gameSetup.set_npcs(player_conversations)
     global currentRoom
     currentRoom = 22  # Start in the living room
     global rooms
@@ -113,6 +123,8 @@ def game_loop():
     commands = gameSetup.set_commands()
     global inventory
     inventory = []
+    global player1
+    player1 = player.Player()
 
     print("=========================")
     print("TEXT RPG")
@@ -120,6 +132,11 @@ def game_loop():
     print("Type 'show help' (w/o quotes) to see the list of possible commands.")
     print("Type 'look around' (w/o quotes) to see a description of the area you are in.")
     print("Commands are all in the format [verb] [noun].")
+    print("=========================")
+
+    print("What do you want to be called?")
+    player1_name = input("> ")
+    player1.set_name(player1_name)
     print("=========================")
 
     while not game_over:
@@ -133,7 +150,7 @@ def game_loop():
         action = input("> ").lower().split()
 
         # Checks for invalid actions and performs it if possible
-        game_over = run_action(action)
+        game_over = run_action(action, player1)
         print("-------------------------")
 
 
