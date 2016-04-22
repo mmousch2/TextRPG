@@ -20,6 +20,7 @@ class NPC(character.Character):
 
             # Print possible player responses:
             if len(conv_node) > 1:
+                print("-------------------------")
                 print("Type the number corresponding to your reply:")
                 index = 1
                 while index < len(conv_node):
@@ -28,7 +29,8 @@ class NPC(character.Character):
                 print(str(index) + ". " + "<Stop Talking>")
                 assert index == len(conv_node), "ERROR: index is not len(conv_node)"
 
-                replyNum = input("Say > ")
+                replyNum = int(input("Say > "))
+                print("-------------------------")
 
                 # Don't update convIndex if stop conversation in the middle
                 if replyNum == len(conv_node):  # "<Stop Talking>"

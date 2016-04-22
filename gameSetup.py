@@ -29,6 +29,10 @@ def set_commands():
     # Map
     commands["look"] = "around"
 
+    # Quit
+    commands["quit"] = commands["end"] = "game"
+    commands["game"] = "over"
+
     return commands
 
 
@@ -92,6 +96,7 @@ def set_rooms(npcs):
     rooms[22].add_direction("north", 12)
     rooms[22].add_direction("west", 21)
     rooms[22].add_direction("east", 23)
+    rooms[22].add_direction("south", 32)
     rooms[22].add_item("book")
 
     # Kitchen
