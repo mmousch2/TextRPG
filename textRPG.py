@@ -36,24 +36,30 @@ def show_status():
     print("-------------------------")
     assert (rooms[currentRoom].name is not None), "ERROR: Current room is None!"
     print("You are in the " + rooms[currentRoom].name)
-    show_items()
+    show("items")
+    show("people")
     print("Inventory: " + str(inventory))
     print("-------------------------")
 
 
-def show_items():
+def show(items):
     global rooms
     global currentRoom
 
-    roomItems = rooms[currentRoom].items
-    if len(roomItems) > 0:
-        if len(roomItems) == 1:
-            print("You can see a " + roomItems[0])
+    if items == "items":
+        roomStuff = rooms[currentRoom].items
+    else:
+        assert items == "people", "ERROR: Invalid option given to show(items)!"
+        roomStuff = rooms[currentRoom].characters
+
+    if len(roomStuff) > 0:
+        if len(roomStuff) == 1:
+            print("You can see " + roomStuff[0])
         else:
             seeItems = "You can see "
-            for i in range(0, len(roomItems) - 1, 1):
-                seeItems += "a " + roomItems[i] + ", "
-            seeItems += "and a " + roomItems[len(roomItems) - 1]
+            for i in range(0, len(roomStuff) - 1, 1):
+                seeItems += roomStuff[i] + ", "
+            seeItems += "and " + roomStuff[len(roomStuff) - 1]
             print(seeItems)
     return
 
@@ -66,6 +72,7 @@ def run_action(action, player):
     global npcs
 
     if len(action) == 2 and commands.get(action[0]) is not None:
+
         # Decide what to do based on action[0]
         if action[0] in ["go", "move", "walk", "head"]:
             currentRoom = player.move(action, rooms[currentRoom], currentRoom)
@@ -83,12 +90,12 @@ def run_action(action, player):
 
         elif action[0] in ["talk", "speak", "greet"] and action[1] in rooms[currentRoom].characters:
             # Launch conversation tree!
-            print("Have not implemented conversation tree yet!")
-            #assert action[1] in npcs, "ERROR: NPC in room but not in global dict!"
-            #npcs[action[1]].talk()
+            # print("Have not implemented conversation tree yet!")
+            assert action[1] in npcs, "ERROR: NPC in room but not in global dict!"
+            npcs[action[1]].talk()
 
         elif action[0] in ["drop"]:
-            player.drop_item(action, inventory)
+            player.drop_item(action, inventory, rooms[currentRoom])
 
         elif action[0] == "show" and action[1] == "help":
             show_help()
@@ -147,7 +154,7 @@ def game_loop():
 
         # Get a new command from the player
         # ex. "go east" is stored as ["go", "east"]
-        action = input("> ").lower().split()
+        action = input("> ").split()
 
         # Checks for invalid actions and performs it if possible
         game_over = run_action(action, player1)

@@ -27,9 +27,10 @@ class Player(character.Character):
         else:
             print("Cannot pick up that item!")
 
-    def drop_item(self, action, inventory):
+    def drop_item(self, action, inventory, room):
         if action[1] in inventory:
             inventory.remove(action[1])
+            room.add_item(action[1])
             assert action[1] not in inventory, "ERROR: Failed to drop item in inventory!"
             print("You dropped a " + action[1])
         else:
