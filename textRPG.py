@@ -41,7 +41,7 @@ def show_status(this_player):
     inventory = this_player.inventory
     msg = ""
 
-    msg += " -------------------------\n"
+    msg += "-------------------------\n"
     assert (currentRoom.name is not None), "ERROR: Current room is None!"
     msg += "You are in the " + currentRoom.name + '\n'
     msg += show("items", this_player) + '\n'
@@ -104,7 +104,7 @@ def run_action(action, this_player):
             # print("Have not implemented conversation tree yet!")
             assert action[1] in npcs, "ERROR: NPC in room but not in global dict!"
             # npcs[action[1]].talk()
-            return "talk " + action[1]
+            return "talk " + action[1] + ' '
 
         elif action[0] in ["drop"]:
             return this_player.drop_item(action)
