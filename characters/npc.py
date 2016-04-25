@@ -1,5 +1,8 @@
-from characters import character
 import gameSetup
+from characters import character
+
+
+# from textRPG import make_move
 
 
 class NPC(character.Character):

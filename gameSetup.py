@@ -1,5 +1,6 @@
-from objects import room
 from characters import npc
+from objects import room
+
 
 # commands: a dict mapping command to possible options, like "go" : "[east/west/north/south]")
 # rooms: a dict mapping indices to Rooms, like integer : Room
@@ -45,7 +46,6 @@ def set_npcs(player_conversations):
     npcs["Vivi"] = npc.NPC("Vivi", player_conversations)
 
     return npcs
-
 
 def set_rooms(npcs):
     # Hard-coded, unfortunately
@@ -291,6 +291,11 @@ def set_rooms(npcs):
     rooms[440].add_item("bones")
 
     # verify that any characters added are in npcs
+    for i in rooms:
+        aroom = rooms[i]
+        if aroom:
+            for direction in aroom.directions:
+                aroom.directions[direction] = rooms[aroom.directions[direction]]
 
     return rooms
 

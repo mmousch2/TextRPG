@@ -25,3 +25,7 @@ class Room:
     # Adds name of character to character list in the room
     def add_character(self, name):
         self.characters.append(name)
+
+    # Removes the character from the room
+    def remove_character(self, name):
+        self.characters.remove(name)
