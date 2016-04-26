@@ -1,11 +1,10 @@
-import os
+import sys
 import unittest
 from io import StringIO
-import sys
 
-from objects import room as r
-from characters import character as c, npc as n, player as p
 import gameSetup
+from characters import npc as n
+from objects import room as r
 
 
 class TestControllerCommands(unittest.TestCase):

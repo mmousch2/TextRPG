@@ -5,6 +5,7 @@ class Room:
         self.description = "An empty room."
         self.name = "Empty Room"
         self.directions = {}  # maps direction to room index, ex. "north" : 1
+        self.id = -1
 
     def set_name(self, name):
         self.name = name

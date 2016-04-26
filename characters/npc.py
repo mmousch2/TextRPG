@@ -1,4 +1,4 @@
-import gameSetup
+from setup import gameSetup
 from characters import character
 
 

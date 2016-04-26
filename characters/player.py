@@ -6,6 +6,7 @@ class Player(character.Character):
         character.Character.__init__(self)
         self.inventory = []
         self.currentRoom = -1
+        self.name = ""
 
     def set_name(self, name):
         self.name = name
