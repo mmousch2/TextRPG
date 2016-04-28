@@ -7,6 +7,7 @@ class Player(character.Character):
         self.inventory = []
         self.currentRoom = -1
         self.name = ""
+        self.online = False
 
     def set_name(self, name):
         self.name = name

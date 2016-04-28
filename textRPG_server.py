@@ -4,6 +4,7 @@
 
 
 import sys
+import signal
 from threading import Thread, Lock
 
 from setup import gameSetup
@@ -17,10 +18,11 @@ global rooms                    # dict of Rooms, {integer (index) : Room}
 global npcs                     # {"name" : NPC}
 global player_conversations     #
 global players                  # List of players in the game (not all might be connected)
-global saved_players
-global number_players           # The number of required players to star the game
+global saved_players            # Dictionary of player saves
 global lock                     # Global lock to limit only one player's action to change the game state at a time
-__LINE__ = debug.__LINE__()
+global end_server               # Flags whether or not the server should end
+__LINE__ = debug.__LINE__()     # Line number at which __LINE__ is used
+DEBUG = False                   # Enable/Disable debug information
 
 
 def show_help():
@@ -137,21 +139,11 @@ def setup():
     npcs = gameSetup.set_npcs(player_conversations)
     global rooms
     global saved_players
-    rooms, saved_players = data.load_saved_data(npcs)
+    rooms, saved_players = data.load_saved_data()
     global commands
     commands = gameSetup.set_commands()
     global players
     players = []
-
-    # Set up the players for the game
-    # Right now each player starts in the same room (Living Room - 22)
-    # global players
-    # global number_players
-    # players = []
-    # for i in range(number_players):
-    #     p = player.Player()
-    #     p.currentRoom = rooms['22']
-    #     players.append(p)
 
 
 def make_move(fd, this_player):
@@ -159,9 +151,9 @@ def make_move(fd, this_player):
     Called per client thread to handle client requests asynchronously.
     Each client will make an action, the server will process it and then
     send to the client the current status of the client's player
-    :param fd: The socket file descriptor of this player
+    :param fd:          The socket file descriptor of this player
     :param this_player: The player information for this connected client
-    :return: A message for the game loop to know when to end (if the message is "Ending game!\n")
+    :return: A message for the game loop to know when to end (if the message contains "Ending game!")
     """
 
     global lock
@@ -170,8 +162,9 @@ def make_move(fd, this_player):
     try:
         response = fd.recv(100).decode('utf-8')
     except:
-        e = sys.exc_info()[0]
-        print("Error: {}\nOn: {}\nLine: {}".format(e, this_player.name, __LINE__))
+        if DEBUG:
+            e = sys.exc_info()[0]
+            print("Error: {}\nOn: {}\nLine: {}".format(e, this_player.name, __LINE__))
         return "Ending game!\n"
 
     # Run the player's action while locking the shared data
@@ -183,24 +176,24 @@ def make_move(fd, this_player):
         msg += show_status(this_player)
         fd.sendall(msg.encode('utf-8'))
     except:
-        e = sys.exc_info()[0]
-        print("Error: {}\nOn: {}\nLine: {}".format(e, this_player.name, __LINE__))
+        if DEBUG:
+            e = sys.exc_info()[0]
+            print("Error: {}\nOn: {}\nLine: {}".format(e, this_player.name, __LINE__))
         return "Ending game!\n"
 
     return msg
 
 
-def process_client(client, player_id):
+def add_player(sock_fd):
     """
-    This function is called per client
-    Each client is handled by a thread which uses this function to
-    monitor the player's status and start taking their actions
-    :param client: Tuple containing (socket file descriptor, address)
-    :param player_id: Index of player in the global players list
-    :return: Nothing (Though in the workplace this should return exit statuses of threads)
+    Given a socket, requests player name from client
+    Sets up the player or loads player if already exists
+    Unique player names only
+    :param sock_fd: socket of connected client
+    :return:    Tuple containing the player object and a bool for if
+                player creation succeeded or not
     """
-
-    fd, addr = client
+    global players
     msg =   "=========================\n" + \
             "TEXT RPG\n" + \
             "=========================\n" + \
@@ -210,15 +203,25 @@ def process_client(client, player_id):
             "=========================\n\n" + \
             "What do you want to be called?\n"
 
+    # Get the player's name
     try:
-        fd.sendall(msg.encode('utf-8'))
-        response = fd.recv(20).decode('utf-8')  # You get 20 characters for your name :P
+        sock_fd.sendall(msg.encode('utf-8'))
+        response = sock_fd.recv(20).decode('utf-8')  # You get 20 characters for your name :P
     except:
-        e = sys.exc_info()[0]
-        print("Error: {}\nLine: {}".format(e, __LINE__))
-        return
+        if DEBUG:
+            e = sys.exc_info()[0]
+            print("Error: {}\nLine: {}".format(e, __LINE__))
+        return "", False
+
     # Set up this player's character info
     if response in saved_players:
+        if saved_players[response] in players:
+            try:
+                sock_fd.sendall("Name already in use!\nEnding Game!".encode('utf-8'))
+            except:
+                pass  # Ignore failed case
+            sock_fd.close()
+            return "", False
         this_player = saved_players[response]
     else:
         this_player = player.Player()
@@ -226,40 +229,93 @@ def process_client(client, player_id):
         this_player.currentRoom = rooms['22']
     this_player.currentRoom.add_character(this_player.name)
 
-    global players
     players.append(this_player)
+    return this_player, True
+
+
+def process_client(fd, addr):
+    """
+    This function is called per client
+    Each client is handled by a thread which uses this function to
+    monitor the player's status and start taking their actions
+    :param fd:   socket file descriptor of player
+    :param addr: address information of player
+    :return: Nothing (Though in the workplace this should return exit statuses of threads)
+    """
+
+    msg = ""
+    global players
+    this_player, success = add_player(fd)
+    if not success:
+        return
 
     # Starting statue information for player
-    fd.sendall(show_status(this_player).encode('utf-8'))
+    try:
+        fd.sendall(show_status(this_player).encode('utf-8'))
+    except:
+        if DEBUG:
+            e = sys.exc_info()[0]
+            print("Error: {}\nLine: {}".format(e, __LINE__))
+        msg = "Ending game!"
 
     # Continue until the game has ended for this player
-    while msg != "Ending game!\n":
-            msg = make_move(fd, this_player)
+    while "Ending game!" not in msg:
+        msg = make_move(fd, this_player)
+
+    print("Client Leaving: {}".format(addr))
+    players.remove(this_player)
+    name = this_player.name
+    this_player.currentRoom.remove_character(name)
+    saved_players[name] = this_player
+    fd.close()
 
 
-def start(num):
-    threads = []
+def start():
+    """
+    Starts the game
+    Clients will be accepted one at a time as they connect to the server
+    A thread is spawned per client to handle the client's actions
+    Server will end upon a SIGINT
+    """
+    global end_server
+    server_socket = server.setup_server()
+    server_socket.settimeout(1)
 
-    # A list of clients connected to the sever [(file descriptor, address), ...]
-    info = server.setup_server(number_players)
-    for i in range(number_players):
-        thread = Thread(target=process_client, args=(info[i], i))
+    while True:
+        try:
+            client = sock_fd, addr = server_socket.accept()
+        except:
+            if DEBUG:
+                e = sys.exc_info()[0]
+                print("Error: {}\nLine: {}".format(e, __LINE__))
+            if end_server:
+                break
+            continue
+        print("client Joined: {}".format(addr))
+        thread = Thread(target=process_client, args=client, daemon=True)
         thread.start()
-        threads.append(thread)
 
-    # Joins with each thread
-    # This prevents players from dropping in and out
-    # For future, could use condition variables and detached states
-    for i in range(number_players):
-        threads[i].join()
+    print("Ending Server!")
+    server_socket.close()
+    data.save_data(rooms, saved_players)
+
+
+def shutdown_server(signum, frame):
+    """Signal handler for closing the server on SIGINT
+    :param signum:  signal number caught (doesn't matter for python...)
+    :param frame:   stack from during this interrupt
+    """
+    global end_server
+    end_server = True
 
 if __name__ == '__main__':
     args = sys.argv
     if len(args) < 2:
-        quit("Usage: python textRPG.py <number of players>")
-    global number_players
-    number_players = int(args[1])
+        quit("Usage: python textRPG_server.py <port>")
+    signal.signal(signal.SIGINT, shutdown_server)
+    global end_server
+    end_server = False
     setup()
-    start(number_players)
+    start()
 
     exit(0)

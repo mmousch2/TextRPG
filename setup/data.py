@@ -1,10 +1,21 @@
+import sys
+
 from objects import room
 from characters import player
 from setup import SAVE_DIR
 
+
 # stored in file as
 # "room number, name, description, directions:room;dir:room..., item;item;..., character;character;..."
-def load_rooms(npcs):
+def load_rooms():
+    """
+    Loads saved rooms from saves/rooms
+    In file as:
+    room#,name,description,[directions],[items],[characters],
+    Where directions, items and characters are separated by ';'
+    And directions are in format -> dir:room#
+    :return: Dictionary of room objects
+    """
     rooms = {}
     with open(SAVE_DIR + "/rooms") as file:
         for line in file:
@@ -33,6 +44,10 @@ def load_rooms(npcs):
 
 
 def save_rooms(rooms):
+    """
+    Saves the room objects' information to saves/rooms
+    :param rooms: Dictionary of room objects
+    """
     with open(SAVE_DIR + "/rooms", mode='w') as file:
         for key in rooms:
             room = rooms[key]
@@ -54,6 +69,14 @@ def save_rooms(rooms):
 # squiggles,gun;mega gun;nuke;ninja sword;,22,
 # name,item;item;...,room,
 def load_player_saves(rooms):
+    """
+    Loads saved players from saves/players
+    In file as:
+    name,[items],room#,
+    Where items are separated by ';'
+    :param rooms: Dictionary of room objects
+    :return: Dictionary of player objects
+    """
     players = {}
     with open(SAVE_DIR + "/players") as file:
         for line in file:
@@ -69,23 +92,58 @@ def load_player_saves(rooms):
 
 
 def save_players(players):
+    """
+    Saves the player objects' information to saves/players
+    :param players: Dictionary of player objects
+    """
     with open(SAVE_DIR + "/players", mode='w') as file:
         for name in players:
             p = players[name]
             data = "{},".format(name)
             for item in p.inventory:
                 data += "{};".format(item)
-            data += ",{},".format(p.currentRoom)
+            data += ",{},".format(p.currentRoom.id)
             print(data, file=file)
     print("players saved")
 
 
-def load_saved_data(npcs):
-    rooms = load_rooms(npcs)
-    players = load_player_saves(rooms)
+def load_saved_data():
+    """
+    Loads room and player save data
+    rooms from saves/rooms
+    players from saves/players
+    :return: Tuple of dictionaries confining loaded info
+    """
+    try:
+        rooms = load_rooms()
+    except:
+        e = sys.exc_info()[0]
+        quit("Load Rooms Failed: {}".format(e))
+
+    try:
+        players = load_player_saves(rooms)
+    except:
+        e = sys.exc_info()[0]
+        quit("Load Rooms Failed: {}".format(e))
     return rooms, players
 
 
 def save_data(rooms, players):
-    save_rooms(rooms)
-    save_players(players)
+    """
+    Saves room and player information
+    rooms from saves/rooms
+    players from saves/players
+    :param rooms:   Dictionary of rooms to save
+    :param players: Dictionary of players to save
+    """
+    try:
+        save_rooms(rooms)
+    except:
+        e = sys.exc_info()[0]
+        quit("Save Rooms Failed: {}".format(e))
+
+    try:
+        save_players(players)
+    except:
+        e = sys.exc_info()[0]
+        quit("Save Players Failed: {}".format(e))
