@@ -13,6 +13,8 @@ from Tests import debug
 from characters import player
 from network import server
 
+global damagePoints             # Amount (int) to damage a player when attacked
+damagePoints = 25
 global commands                 # dict mapping command to possible options, like "go" : "[east/west/north/south]")
 global rooms                    # dict of Rooms, {integer (index) : Room}
 global npcs                     # {"name" : NPC}
@@ -45,13 +47,42 @@ def show_status(this_player):
     inventory = this_player.inventory
     msg = ""
 
-    msg += "-------------------------\n"
+    # Check if player is dead - if so, end the game
+    if this_player.get_health() == 0:
+        # Lose all your items
+        if this_player.currentRoom.id != "63" and this_player.currentRoom.id != "440":
+            for item in this_player.inventory:
+                this_player.drop_item(["drop", item])
+        # Special cases (hard-to-get-to rooms)
+        else:
+            # If player is in the room with the Grue, drop in the room to the north instead
+            if this_player.currentRoom.id == "63":
+                for item in this_player.inventory:
+                    this_player.inventory.remove(item)
+                    rooms["53"].add_item(item)
+            # If player is in the basement, drop in the room above instead
+            if this_player.currentRoom.id == "440":
+                for item in this_player.inventory:
+                    this_player.inventory.remove(item)
+                    rooms["44"].add_item(item)
+        return "YOU ARE DEAD!  Dumping your items now!\nEnding game!\n"
+
     assert (currentRoom.name is not None), "ERROR: Current room is None!"
-    msg += "You are in the " + currentRoom.name + '\n'
-    msg += show("items", this_player) + '\n'
-    msg += show("people", this_player) + '\n'
-    msg += "Inventory: " + str(inventory) + '\n'
+
     msg += "-------------------------\n"
+    msg += "Player Name: " + this_player.name + '\n'
+    msg += "You are in the " + currentRoom.name + '\n'
+    show_items = show("items", this_player)
+    if show_items != "":
+        msg += show_items + '\n'
+    show_people = show("people", this_player)
+    if show_people != "":
+        msg += show_people + '\n'
+    msg += "Inventory: " + str(inventory) + '\n'
+    msg += "Active Inventory: " + str(this_player.activeInventory) + '\n'
+    msg += "Health: " + str(this_player.get_health()) + '\n'
+    msg += "-------------------------\n"
+
     return msg
 
 
@@ -64,7 +95,10 @@ def show(items, this_player):
         roomStuff = currentRoom.items
     else:
         assert items == "people", "ERROR: Invalid option given to show(items)!"
-        roomStuff = currentRoom.characters[:-1]
+        roomStuff = []
+        for person in currentRoom.characters:
+            if person != this_player.name:
+                roomStuff.append(person)
 
     if len(roomStuff) > 0:
         if len(roomStuff) == 1:
@@ -78,10 +112,11 @@ def show(items, this_player):
     return msg
 
 
-# Returns True if game is over
 def run_action(action, this_player):
     global rooms
     global npcs
+    global players
+    global damagePoints
     currentRoom = this_player.currentRoom
     inventory = this_player.inventory
     msg = ""
@@ -93,19 +128,11 @@ def run_action(action, this_player):
             return this_player.move(action)
 
         elif action[0] in ["get", "grab", "take"]:
-            #player.get_item(action, currentRoom, inventory)
-            if action[1] in currentRoom.items:
-                inventory.append(action[1])
-                assert action[1] in inventory, "ERROR: Failed to pick up item in room!"
-                currentRoom.items.remove(action[1])
-                assert action[1] not in currentRoom.items, "ERROR: Failed to remove picked up item from room!"
-                return "Picked up a " + action[1] + "!\n"
-            else:
-                return "Cannot pick up that item!\n"
+            return this_player.get_item(action)
 
-        elif action[0] in ["talk", "speak", "greet"] and action[1] in currentRoom.characters:
+        elif action[0] in ["talk", "speak", "greet"] and action[1] in currentRoom.characters and action[1] in npcs:
             # Launch conversation tree!
-            # print("Have not implemented conversation tree yet!")
+            # Note: Cannot talk to other non-NPCs!
             assert action[1] in npcs, "ERROR: NPC in room but not in global dict!"
             # npcs[action[1]].talk()
             return "talk " + action[1] + ' '
@@ -117,14 +144,33 @@ def run_action(action, this_player):
             return show_help()
 
         elif action[0] == "look" and action[1] == "around":
-            return currentRoom.description + '\n'
+            ret_str = "-------------------------\n"
+            ret_str += "\nRoom Description:\n"
+            ret_str += currentRoom.description + "\n"
+            ret_str += "\n"
+            return ret_str
+
+        elif action[0] == "fight" and action[1] in currentRoom.characters:
+            # Check opponent is in players
+            for p in players:
+                if p.name == action[1]:
+                    p.damage(damagePoints)
+                    return "-------------------------\n\nDealt " + str(damagePoints) + \
+                           " damage to " + action[1] + "!\n\n"
+            return "-------------------------\n\nCould not fight " + action[1] + "!\n\n"
+
+        elif action[0] in ["use", "equip", "activate"]:
+            return this_player.activate_item(action)
+
+        elif action[0] in ["unuse", "unequip", "deactivate"]:
+            return this_player.deactivate_item(action)
 
         elif ((action[0] == "quit" or action[0] == "end") and action[1] == "game") or \
                 (action[0] == "game" and action[1] == "over"):
             return "Ending game!\n"
 
     else:
-        return "Cannot perform that action!\n"
+        return "-------------------------\n\nCannot perform that action!\n\n"
 
     return ""
 
@@ -173,7 +219,8 @@ def make_move(fd, this_player):
 
     # Try sending information to the player
     try:
-        msg += show_status(this_player)
+        if "Ending game!" not in msg:
+            msg += show_status(this_player)
         fd.sendall(msg.encode('utf-8'))
     except:
         if DEBUG:
@@ -197,9 +244,11 @@ def add_player(sock_fd):
     msg =   "=========================\n" + \
             "TEXT RPG\n" + \
             "=========================\n" + \
+            "Do not put any spaces in your player name or in any items.\n" + \
             "Type 'show help' (w/o quotes) to see the list of possible commands.\n" + \
             "Type 'look around' (w/o quotes) to see a description of the area you are in.\n" + \
             "Commands are all in the format [verb] [noun].\n" + \
+            "Type 'quit game' at any time to exit the game.\n" + \
             "=========================\n\n" + \
             "What do you want to be called?\n"
 
@@ -227,6 +276,13 @@ def add_player(sock_fd):
         this_player = player.Player()
         this_player.set_name(response)
         this_player.currentRoom = rooms['22']
+
+    if this_player.get_health() == 0:
+        this_player.health = 25
+
+    if this_player.currentRoom.id == "63":
+        this_player.currentRoom = rooms["22"]
+
     this_player.currentRoom.add_character(this_player.name)
 
     players.append(this_player)

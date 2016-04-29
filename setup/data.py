@@ -6,12 +6,12 @@ from setup import SAVE_DIR
 
 
 # stored in file as
-# "room number, name, description, directions:room;dir:room..., item;item;..., character;character;..."
+# "room number| name| description| directions:room;dir:room...| item;item;...| character;character;...|"
 def load_rooms():
     """
     Loads saved rooms from saves/rooms
     In file as:
-    room#,name,description,[directions],[items],[characters],
+    room#|name|description|[directions]|[items]|[characters]|
     Where directions, items and characters are separated by ';'
     And directions are in format -> dir:room#
     :return: Dictionary of room objects
@@ -19,7 +19,8 @@ def load_rooms():
     rooms = {}
     with open(SAVE_DIR + "/rooms") as file:
         for line in file:
-            data = line.split(',')
+            data = line.split('|')
+            assert len(data) >= 7, "ERROR: When loading players, have too few deliminater-separated splits!"
             index = data[0]
             this_room = room.Room()
             this_room.set_name(data[1])
@@ -51,16 +52,16 @@ def save_rooms(rooms):
     with open(SAVE_DIR + "/rooms", mode='w') as file:
         for key in rooms:
             room = rooms[key]
-            data = "{},{},{},".format(key, room.name, room.description)
+            data = "{}|{}|{}|".format(key, room.name, room.description)
             for dir_key in room.directions:
                 data += "{}:{};".format(dir_key, room.directions[dir_key].id)
-            data += ','
+            data += '|'
             for item in room.items:
                 data += "{};".format(item)
-            data += ','
+            data += '|'
             for char in room.characters:
                 data += "{};".format(char)
-            data += ','
+            data += '|'
 
             print(data, file=file)
     print("rooms saved")
@@ -72,7 +73,7 @@ def load_player_saves(rooms):
     """
     Loads saved players from saves/players
     In file as:
-    name,[items],room#,
+    name|[items]|room#|[active items]|health|
     Where items are separated by ';'
     :param rooms: Dictionary of room objects
     :return: Dictionary of player objects
@@ -81,11 +82,16 @@ def load_player_saves(rooms):
     with open(SAVE_DIR + "/players") as file:
         for line in file:
             p = player.Player()
-            data = line.split(',')
+            data = line.split('|')
+            assert len(data) >= 5, "ERROR: When loading players, have too few deliminater-separated splits!"
             p.set_name(data[0])
             for item in data[1].split(';')[:-1]:
                 p.inventory.append(item)
             p.currentRoom = rooms[data[2]]
+            for activeItem in data[3].split(';')[:-1]:
+                p.activeInventory.append(activeItem)
+            p.health = int(data[4])
+            assert 0 <= p.health <= 100, "ERROR: Loaded player's health < 0 or > 100!"
             players[p.name] = p
 
     return players
@@ -99,10 +105,13 @@ def save_players(players):
     with open(SAVE_DIR + "/players", mode='w') as file:
         for name in players:
             p = players[name]
-            data = "{},".format(name)
+            data = "{}|".format(name)
             for item in p.inventory:
                 data += "{};".format(item)
-            data += ",{},".format(p.currentRoom.id)
+            data += "|{}|".format(p.currentRoom.id)
+            for activeItem in p.activeInventory:
+                data += "{};".format(activeItem)
+            data += "|{}|".format(p.health)
             print(data, file=file)
     print("players saved")
 

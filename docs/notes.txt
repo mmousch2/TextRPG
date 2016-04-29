@@ -14,40 +14,22 @@ Things to add:
 =========================
 
 gameSetup.set_commands():
-    Add fighting and stealing and buying items later
-    And "use" for items
-    Maybe add a map item later?  But make it hard to get
+    Add stealing and buying items later
+    Maybe add a map item later?  But make it hard to get.
 
 gameSetup.set_rooms():
-    ***Need to add the rooms + items
-    Maybe add "up" and "down"?  (And ascend/descend/climb for actions?)
-    Add death if you enter certain rooms with a light or weapon or something
     Add something like "inspect fireplace" --> you get an item
 
 Other:
-    Add health and money?
+    Add money/shops
     Battles + odds of hit/miss (rand/roll dice)
     *NPC who will give you an item if you win a dice game, but if you lose you lose an item?
      (at random, and chance you don't lose anything, or you die?)
     Add enemies
-    ***Write conversation trees
+    Note on conversations:
         NEED ALL NPC TREES TO HAVE A DEFAULT FIRST "reply" FROM THE PLAYER
         (maps "what PC says" to "what NPC can says")
     Make "The Pit" catch Ctrl-C and go "BWAHAHAHAHA"
+    ***Change so only can do damge if a weapon is activated - WOULD NEED GLOBAL LIST OF ALL POSSIBLE WEAPONS : damage
+    Only allow damage while other player isn't talking to an NPC?
 
-
-
-THIS WEEK:
-Characters' data structures
-Structures/methods for map + interactions
-Basic command parsing/input
-Dialog trees set up and easy to expand
-Testing
-
-NEXT WEEK:
-Client side of networking
-Server side of networking
-Client/server interactions change story in the game (or at least let them fight)
-Users can save/load progress
-(Expand conversation trees)
-(Add more commands)

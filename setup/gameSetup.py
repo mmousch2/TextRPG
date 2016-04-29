@@ -8,7 +8,7 @@ def set_commands():
     commands = dict()
 
     # Movements
-    commands["go"] = commands["move"] = commands["walk"] = commands["head"] = "[north/east/south/west]"
+    commands["go"] = commands["move"] = commands["walk"] = commands["head"] = "[north/east/south/west/up/down]"
 
     # Pick up
     commands["get"] = commands["grab"] = commands["take"] = "[item]"
@@ -25,6 +25,13 @@ def set_commands():
     # Map
     commands["look"] = "around"
 
+    # Fighting
+    commands["fight"] = "[player name]"
+
+    # Using items
+    commands["use"] = commands["equip"] = commands["activate"] = "[item]"
+    commands["unuse"] = commands["unequip"] = commands["deactivate"] = "[item]"
+
     # Quit
     commands["quit"] = commands["end"] = "game"
     commands["game"] = "over"
@@ -37,14 +44,19 @@ def set_npcs(player_conversations):
 
     npcs["Bartender"] = npc.NPC("Bartender", player_conversations)
     npcs["Vivi"] = npc.NPC("Vivi", player_conversations)
+    npcs["Grue"] = npc.NPC("Grue", player_conversations)
 
     return npcs
+
 
 # Note: All player conversations must have at least two keys, "Hello." and "Goodbye."
 # "Hello." maps to ("[NPC greeting]", ...), and "Goodbye." maps to ("Goodbye.").
 # "<Stop Talking>" must NOT be in the tree.
 def make_conv_trees():
     player_conversations = dict()  # {"NPC name" : {"What player says" : ("What NPC says", ..., "Possible replies")}}
+
+    # Grue
+    player_conversations["Grue"] = {"Hello.": ("[SCREAMING]"), "Goodbye.": ("[SCREAMING]")}
 
     # Vivi
     vivi_dict = dict()

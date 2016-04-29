@@ -23,7 +23,7 @@ def game_loop(sock_fd):
     :param sock_fd: the server socket to read from and write to
     """
     global npcs
-    msg = ""
+    msg = ""  # i.e. talk Vivi, or other messages to display
     while "Ending game!" not in msg:
 
         # Get a new command from the player
@@ -37,10 +37,13 @@ def game_loop(sock_fd):
             npc = msg.split()[1]
             npcs[npc].talk()
         else:
-            print(msg)
+            # print(msg)
             if "Ending game!" in msg:
                 break
+            else:
+                print(msg)
         action = input("> ")
+        print("")
 
         try:
             sock_fd.sendall(action.encode('utf-8'))
